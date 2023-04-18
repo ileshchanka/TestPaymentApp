@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Test Payment App</string>
+
+    <string name="email">Email</string>
+    <string name="card_information">Card Information</string>
+    <string name="number">Number</string>
+    <string name="mm_yy">MM / YY</string>
+    <string name="cvc">CVC</string>
+    <string name="pay">Pay</string>
+    <string name="i_i_com">i@i.com</string>
+
+    <string name="alert_title">Success</string>
+    <string name="alert_message">Test Paid Successfully</string>
+    <string name="alert_positive_button">OK</string>
+</resources>
