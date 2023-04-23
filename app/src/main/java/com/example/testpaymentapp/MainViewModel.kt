@@ -3,10 +3,16 @@ package com.example.testpaymentapp
 import androidx.annotation.ColorInt
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-
+import androidx.lifecycle.viewModelScope
+import com.example.testpaymentapp.validation.InputFieldValidator
+import com.example.testpaymentapp.validation.UIColorsProvider
+import com.example.testpaymentapp.validation.ValidationResult
+import com.example.testpaymentapp.validation.ValidationType
+import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val validator: InputFieldValidator,
+    private val uiColorsProvider: UIColorsProvider,
     resourceProvider: ResourceProvider,
 ) : ViewModel() {
 
@@ -22,10 +28,10 @@ class MainViewModel(
     )
 
     data class ViewState(
-        val isValidEmail: Boolean = false,
-        val isValidNumber: Boolean = false,
-        val isValidDate: Boolean = false,
-        val isValidCVC: Boolean = false,
+        val isValidEmail: ValidationResult = ValidationResult.Fail,
+        val isValidNumber: ValidationResult = ValidationResult.Fail,
+        val isValidDate: ValidationResult = ValidationResult.Fail,
+        val isValidCVC: ValidationResult = ValidationResult.Fail,
         @ColorInt val emailColor: Int = 0,
         @ColorInt val numberColor: Int = 0,
         @ColorInt val dateColor: Int = 0,
@@ -34,73 +40,77 @@ class MainViewModel(
     )
 
     fun emailTextChanged(email: String) {
-        validator.validateEmail(email) { isValidEmail, _ ->
+        viewModelScope.launch {
             viewState.value = viewState.value?.copy(
-                isValidEmail = isValidEmail,
+                isValidEmail = validator.validate(email, ValidationType.EMAIL),
             )
+            validateAllFields()
         }
-        validateAllFields()
     }
 
     fun emailFocusChanged(email: String) {
-        validator.validateEmail(email) { isValidEmail, emailColor ->
+        viewModelScope.launch {
+            val validationResult = validator.validate(email, ValidationType.EMAIL)
             viewState.value = viewState.value?.copy(
-                isValidEmail = isValidEmail,
-                emailColor = emailColor,
+                isValidEmail = validationResult,
+                emailColor = uiColorsProvider.provideColor(validationResult)
             )
         }
     }
 
     fun numberTextChanged(number: String) {
-        validator.validateNumber(number) { isValidNumber, _ ->
+        viewModelScope.launch {
             viewState.value = viewState.value?.copy(
-                isValidNumber = isValidNumber,
+                isValidNumber = validator.validate(number, ValidationType.CARD)
             )
         }
         validateAllFields()
     }
 
     fun numberFocusChanged(number: String) {
-        validator.validateNumber(number) { isValidNumber, numberColor ->
+        viewModelScope.launch {
+            val validationResult = validator.validate(number, ValidationType.CARD)
             viewState.value = viewState.value?.copy(
-                isValidNumber = isValidNumber,
-                numberColor = numberColor,
+                isValidNumber = validationResult,
+                numberColor = uiColorsProvider.provideColor(validationResult)
             )
         }
     }
 
     fun dateTextChanged(date: String) {
-        validator.validateDate(date) { isValidDate, _ ->
+        viewModelScope.launch {
             viewState.value = viewState.value?.copy(
-                isValidDate = isValidDate,
+                isValidDate = validator.validate(date, ValidationType.CARD_DATE)
             )
         }
         validateAllFields()
     }
 
     fun dateFocusChanged(date: String) {
-        validator.validateDate(date) { isValidDate, dateColor ->
+        viewModelScope.launch {
+            val validationResult = validator.validate(date, ValidationType.CARD_DATE)
             viewState.value = viewState.value?.copy(
-                isValidDate = isValidDate,
-                dateColor = dateColor,
+                isValidDate = validationResult,
+                dateColor = uiColorsProvider.provideColor(validationResult)
             )
         }
     }
 
     fun cvcTextChanged(cvc: String) {
-        validator.validateCVC(cvc) { isValidCVC, _ ->
+        viewModelScope.launch {
             viewState.value = viewState.value?.copy(
-                isValidCVC = isValidCVC,
+                isValidCVC = validator.validate(cvc, ValidationType.CVC)
             )
         }
         validateAllFields()
     }
 
     fun cvcFocusChanged(cvc: String) {
-        validator.validateCVC(cvc) { isValidCVC, cvcColor ->
+        viewModelScope.launch {
+            val validationResult = validator.validate(cvc, ValidationType.CVC)
             viewState.value = viewState.value?.copy(
-                isValidCVC = isValidCVC,
-                cvcColor = cvcColor,
+                isValidCVC = validationResult,
+                cvcColor = uiColorsProvider.provideColor(validationResult)
             )
         }
     }
@@ -108,7 +118,7 @@ class MainViewModel(
     private fun validateAllFields() {
         with(viewState.value) {
             val validated =
-                this?.isValidEmail ?: false && this?.isValidNumber ?: false && this?.isValidDate ?: false && this?.isValidCVC ?: false
+                (this?.isValidEmail == ValidationResult.Success) && (this.isValidNumber == ValidationResult.Success) && (this.isValidDate == ValidationResult.Success) && (this.isValidCVC == ValidationResult.Success)
 
             viewState.value = this?.copy(
                 isPayButtonEnabled = validated,
